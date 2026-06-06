@@ -1,0 +1,40 @@
+{
+  "name": "ergani-python-sdk",
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  "service": "ergani-python-sdk",
+  "workspaceFolder": "/usr/src/app",
+  "postCreateCommand": "uv sync",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {
+      "ppa": true,
+      "version": "os-provided"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "editorconfig.editorconfig",
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ],
+      "settings": {
+        "editor.formatOnPaste": true,
+        "editor.formatOnSave": true,
+        "editor.formatOnSaveMode": "modifications",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.formatOnSaveMode": "modifications",
+          "editor.formatOnPaste": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
+        }
+      }
+    }
+  }
+}

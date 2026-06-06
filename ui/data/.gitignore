@@ -1,0 +1,3 @@
+# Local DB files not used (data lives in Firestore)
+*.db
+*.db-journal

@@ -1,0 +1,760 @@
+* {
+  box-sizing: border-box;
+}
+
+.app-kiosk {
+  min-height: 100dvh;
+  background: #f3f4f6;
+  color: #1a2b4a;
+}
+
+.app-kiosk.hidden {
+  display: none !important;
+}
+
+.app-kiosk .kiosk {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body.kiosk-active {
+  margin: 0;
+  background: #f3f4f6;
+}
+
+.kiosk {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.25rem 1.5rem;
+}
+
+.kiosk-header {
+  text-align: center;
+  padding-top: 0.5rem;
+}
+
+.kiosk-header h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.status-line {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  min-height: 1.2em;
+}
+
+.status-line.is-err {
+  color: #b91c1c;
+}
+
+.status-line.is-ok {
+  color: #15803d;
+}
+
+.kiosk-actions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 1.5rem 0.75rem;
+}
+
+.punch-btn {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  background: #1e6fd9;
+  color: #fff;
+  padding: 1.75rem 1rem 1.5rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.punch-btn:active {
+  transform: scale(0.98);
+}
+
+.punch-btn__label {
+  display: block;
+  font-size: 1.65rem;
+  font-weight: 600;
+}
+
+.punch-btn__sub {
+  display: block;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-top: 0.2rem;
+}
+
+.punch-btn__bar {
+  display: block;
+  width: 7rem;
+  height: 5px;
+  margin: 0.9rem auto 0;
+  border-radius: 3px;
+}
+
+.punch-btn__bar--green {
+  background: #22c55e;
+}
+
+.punch-btn__bar--orange {
+  background: #f97316;
+}
+
+.kiosk-clock {
+  text-align: center;
+  padding-bottom: 0.5rem;
+}
+
+.clock-time {
+  font-size: 3.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.clock-date {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+  text-transform: capitalize;
+}
+
+.clock-line {
+  height: 3px;
+  background: #f87171;
+  margin: 1rem 2rem 0;
+  border-radius: 2px;
+}
+
+.scanner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.scanner-overlay.hidden {
+  display: none;
+}
+
+.scanner-panel {
+  width: 100%;
+  max-width: 22rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem;
+  color: #0f172a;
+}
+
+.scanner-title {
+  margin: 0 0 0.75rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.qr-reader {
+  width: 100%;
+  min-height: 260px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.btn-cancel {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background: #334155;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.toast {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1.5rem;
+  z-index: 200;
+  padding: 1rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.toast.hidden {
+  display: none;
+}
+
+.toast.is-ok {
+  background: #15803d;
+}
+
+.toast.is-err {
+  background: #b91c1c;
+}
+
+.kiosk-clock {
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.admin-overlay.hidden {
+  display: none;
+}
+
+.admin-panel {
+  width: 100%;
+  max-width: 20rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem 1.5rem;
+  color: #0f172a;
+}
+
+.admin-panel h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.admin-hint {
+  margin: 0.35rem 0 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.admin-panel label {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.admin-panel label span {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #475569;
+}
+
+.admin-panel input {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.admin-error {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: #b91c1c;
+}
+
+.admin-error.hidden {
+  display: none;
+}
+
+.btn-admin-submit {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background: #1e6fd9;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-admin-cancel {
+  display: block;
+  width: 100%;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 8px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+/* Slide menu + top bar (Epsilon-style) */
+.kiosk-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.kiosk-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.kiosk-icon-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  color: #334155;
+}
+
+.kiosk-topbar-title {
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: left;
+  padding-left: 0.25rem;
+  color: #0f172a;
+}
+
+.kiosk-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 1rem 1rem;
+}
+
+.kiosk-view.hidden {
+  display: none !important;
+}
+
+.kiosk-view-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+}
+
+.kiosk-view-sub {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.kiosk-status {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.kiosk-muted {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.kiosk-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+}
+
+.kiosk-drawer:not(.hidden) {
+  pointer-events: auto;
+}
+
+.kiosk-drawer.hidden {
+  display: none;
+}
+
+.kiosk-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.kiosk-drawer-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: min(20rem, 92vw);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.kiosk-drawer--right .kiosk-drawer-panel {
+  right: 0;
+  left: auto;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.18);
+}
+
+.kiosk-drawer-companies {
+  flex-shrink: 0;
+  max-height: 42vh;
+  overflow-y: auto;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kiosk-drawer-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.kiosk-drawer-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.kiosk-btn-connect {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 10px;
+  background: #15803d;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kiosk-btn-connect:active {
+  transform: scale(0.98);
+}
+
+.kiosk-company-pick.is-selected {
+  border-color: #1e6fd9;
+  background: #eff6ff;
+  font-weight: 600;
+  box-shadow: 0 0 0 2px rgba(30, 111, 217, 0.25);
+}
+
+.kiosk-drawer-head {
+  background: linear-gradient(180deg, #1e6fd9 0%, #1a5bb8 100%);
+  color: #fff;
+  padding: 1rem 1rem 1.1rem;
+}
+
+.kiosk-drawer-brand {
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.kiosk-drawer-company {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.kiosk-drawer-meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.92;
+}
+
+.kiosk-drawer-nav {
+  flex: 1;
+  padding: 0.5rem 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kiosk-nav-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  color: #334155;
+}
+
+.kiosk-nav-item.is-active {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.kiosk-nav-icon {
+  width: 1.25rem;
+  color: #94a3b8;
+  font-size: 1.1rem;
+}
+
+.kiosk-nav-sub {
+  flex: 1 1 100%;
+  margin: 0.15rem 0 0 1.9rem;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.kiosk-drawer-foot {
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.kiosk-drawer-help {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.kiosk-app-version,
+.kiosk-topbar-title,
+#kiosk-admin-hotspot-brand {
+  cursor: default;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#kiosk-admin-hotspot-version {
+  cursor: default;
+}
+
+.kiosk-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.kiosk-modal.hidden {
+  display: none;
+}
+
+.kiosk-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.kiosk-modal-panel {
+  position: relative;
+  width: 100%;
+  max-width: 20rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.1rem;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.kiosk-modal-panel h3 {
+  margin: 0 0 0.35rem;
+}
+
+.kiosk-company-list {
+  list-style: none;
+  margin: 0.75rem 0;
+  padding: 0;
+}
+
+.kiosk-company-pick {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.kiosk-statements-list {
+  flex: 1;
+  overflow: auto;
+}
+
+.kiosk-stmt-ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kiosk-stmt-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.kiosk-stmt-item.is-in {
+  border-left: 4px solid #22c55e;
+}
+
+.kiosk-stmt-item.is-out {
+  border-left: 4px solid #f97316;
+}
+
+.kiosk-stmt-meta {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+.kiosk-punch-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 145;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.kiosk-punch-confirm.hidden {
+  display: none;
+}
+
+.kiosk-punch-confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.kiosk-punch-confirm-panel {
+  position: relative;
+  width: 100%;
+  max-width: 22rem;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.2rem 1.25rem 1.3rem;
+  color: #0f172a;
+  text-align: center;
+}
+
+.kiosk-punch-confirm-panel h3 {
+  margin: 0 0 0.65rem;
+  font-size: 1.2rem;
+}
+
+.kiosk-confirm-movement {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e6fd9;
+}
+
+.kiosk-confirm-details {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #334155;
+  white-space: pre-line;
+}
+
+.kiosk-confirm-warning {
+  margin: -0.5rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: #b91c1c;
+  line-height: 1.4;
+}
+
+.kiosk-punch-confirm-panel .kiosk-btn-connect {
+  margin-bottom: 0.5rem;
+}
+
+.kiosk-camera-help {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.kiosk-camera-help.hidden {
+  display: none;
+}
+
+.kiosk-camera-help-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.kiosk-camera-help-panel {
+  position: relative;
+  width: 100%;
+  max-width: 22rem;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.15rem 1.2rem 1.25rem;
+  color: #0f172a;
+  max-height: 85vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kiosk-camera-help-panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.kiosk-camera-help-lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.kiosk-camera-help-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.kiosk-camera-help-steps li {
+  margin-bottom: 0.45rem;
+}
+
+.kiosk-camera-help-panel .kiosk-btn-connect {
+  margin-bottom: 0.5rem;
+}

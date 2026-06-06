@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="el">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Ergani Card Scanner</title>
+    <link rel="stylesheet" href="/static/kiosk.css" />
+  </head>
+  <body>
+    <main class="kiosk">
+      <header class="kiosk-header">
+        <h1 id="company-name">Ergani Card Scanner</h1>
+        <p id="status-line" class="status-line"></p>
+      </header>
+
+      <div class="kiosk-actions">
+        <button type="button" id="btn-arrival" class="punch-btn punch-btn--in">
+          <span class="punch-btn__label">Check-in</span>
+          <span class="punch-btn__sub">Προσέλευση</span>
+          <span class="punch-btn__bar punch-btn__bar--green"></span>
+        </button>
+        <button type="button" id="btn-departure" class="punch-btn punch-btn--out">
+          <span class="punch-btn__label">Check-out</span>
+          <span class="punch-btn__sub">Αποχώρηση</span>
+          <span class="punch-btn__bar punch-btn__bar--orange"></span>
+        </button>
+      </div>
+
+      <footer id="admin-hotspot" class="kiosk-clock" title="">
+        <div id="clock-time" class="clock-time">--:--</div>
+        <div id="clock-date" class="clock-date">—</div>
+        <div class="clock-line"></div>
+      </footer>
+    </main>
+
+    <div id="scanner-overlay" class="scanner-overlay hidden" aria-hidden="true">
+      <div class="scanner-panel">
+        <p id="scanner-title" class="scanner-title">Σάρωση QR</p>
+        <div id="qr-reader" class="qr-reader"></div>
+        <button type="button" id="btn-scanner-cancel" class="btn-cancel">Άκυρο</button>
+      </div>
+    </div>
+
+    <div id="admin-overlay" class="admin-overlay hidden" aria-hidden="true">
+      <div class="admin-panel">
+        <h2>Σύνδεση admin</h2>
+        <p class="admin-hint">Διαχείριση προγράμματος &amp; εταιρείας</p>
+        <form id="admin-login-form">
+          <label>
+            <span>Όνομα</span>
+            <input id="admin-username" type="text" autocomplete="username" required />
+          </label>
+          <label>
+            <span>Κωδικός</span>
+            <input
+              id="admin-password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <p id="admin-login-error" class="admin-error hidden"></p>
+          <button type="submit" class="btn-admin-submit">Σύνδεση</button>
+          <button type="button" id="btn-admin-cancel" class="btn-admin-cancel">Άκυρο</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden" role="status"></div>
+
+    <script>
+      window.KIOSK_KEY = "__KIOSK_KEY__";
+    </script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="/static/kiosk.js"></script>
+  </body>
+</html>

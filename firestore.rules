@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// Ergani UI — όλα τα δεδομένα μέσω Flask server (Firebase Admin SDK).
+// Τα rules κλειδώνουν πρόσβαση από browser/mobile SDK (allow: false).
+// Ο server bypass-άρει τα rules με service account.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // app_users: username, password_hash, role, active, company_ids[], created_at
+    match /app_users/{userId} {
+      allow read, write: if false;
+    }
+
+    // companies: name, ergani_username, ergani_password_enc, base_url, user_type, notes
+    match /companies/{companyId} {
+      allow read, write: if false;
+    }
+
+    // shift_grids/{companyId}: weekStart, employees[] (ψηφιακή κάρτα / πρόγραμμα)
+    match /shift_grids/{companyId} {
+      allow read, write: if false;
+    }
+
+    // company_employees/{companyId}: λίστα εργαζομένων (αφμ, όνομα, επώνυμο) από Ergani
+    match /company_employees/{companyId} {
+      allow read, write: if false;
+    }
+
+    // meta: counters (ids), schema (version)
+    match /meta/{docId} {
+      allow read, write: if false;
+    }
+
+    // submissions: μελλοντικά αρχεία υποβολών (πρωτόκολλα, logs)
+    match /submissions/{submissionId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="el">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ergani — Ψηφιακή Κάρτα</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/kiosk.css" />
+  </head>
+  <body class="kiosk-only">
+    <div id="app-kiosk" class="app-kiosk hidden">
+      <div class="kiosk-shell">
+        <header class="kiosk-topbar">
+          <span id="kiosk-admin-hotspot-title" class="kiosk-topbar-title">Ergani Card Scanner</span>
+          <button type="button" id="kiosk-menu-btn" class="kiosk-icon-btn" aria-label="Μενού">
+            ☰
+          </button>
+        </header>
+
+        <div id="kiosk-view-home" class="kiosk-view">
+          <p id="kiosk-status-line" class="status-line kiosk-status"></p>
+          <div class="kiosk-actions">
+            <button type="button" id="kiosk-btn-arrival" class="punch-btn punch-btn--in">
+              <span class="punch-btn__label">Check-in</span>
+              <span class="punch-btn__sub">Προσέλευση</span>
+              <span class="punch-btn__bar punch-btn__bar--green"></span>
+            </button>
+            <button type="button" id="kiosk-btn-departure" class="punch-btn punch-btn--out">
+              <span class="punch-btn__label">Check-out</span>
+              <span class="punch-btn__sub">Αποχώρηση</span>
+              <span class="punch-btn__bar punch-btn__bar--orange"></span>
+            </button>
+          </div>
+          <footer class="kiosk-clock">
+            <div id="kiosk-clock-time" class="clock-time">--:--</div>
+            <div id="kiosk-clock-date" class="clock-date">—</div>
+            <div class="clock-line"></div>
+          </footer>
+        </div>
+
+        <div id="kiosk-view-statements" class="kiosk-view hidden">
+          <h2 class="kiosk-view-title">Statements</h2>
+          <p class="kiosk-view-sub">Check-in / Check-out από αυτή την εφαρμογή</p>
+          <div id="kiosk-statements-list" class="kiosk-statements-list">
+            <p class="kiosk-muted">Φόρτωση…</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="kiosk-drawer" class="kiosk-drawer kiosk-drawer--right hidden" aria-hidden="true">
+        <div id="kiosk-drawer-backdrop" class="kiosk-drawer-backdrop"></div>
+        <aside class="kiosk-drawer-panel">
+          <div class="kiosk-drawer-head">
+            <p class="kiosk-drawer-brand">Ergani Card Scanner</p>
+            <p id="kiosk-drawer-company" class="kiosk-drawer-company">—</p>
+            <p id="kiosk-drawer-vat" class="kiosk-drawer-meta">VAT: —</p>
+            <p id="kiosk-drawer-branch" class="kiosk-drawer-meta">Branch: —</p>
+          </div>
+          <section class="kiosk-drawer-companies">
+            <h3 class="kiosk-drawer-section-title">Εταιρεία / Ergani</h3>
+            <p class="kiosk-muted kiosk-drawer-hint">
+              Διάλεξε εταιρεία — η επιλογή μένει σε αυτή τη συσκευή.
+            </p>
+            <ul id="kiosk-company-list" class="kiosk-company-list"></ul>
+            <button type="button" id="kiosk-btn-connect" class="kiosk-btn-connect">
+              Σύνδεση με Ergani
+            </button>
+          </section>
+          <nav class="kiosk-drawer-nav">
+            <button type="button" class="kiosk-nav-item is-active" data-kiosk-nav="home">
+              <span class="kiosk-nav-icon">⌂</span>
+              <span>Home</span>
+            </button>
+            <button type="button" class="kiosk-nav-item" data-kiosk-nav="sync">
+              <span class="kiosk-nav-icon">↻</span>
+              <span>Sync</span>
+              <small id="kiosk-sync-label" class="kiosk-nav-sub"></small>
+            </button>
+            <button type="button" class="kiosk-nav-item" data-kiosk-nav="statements">
+              <span class="kiosk-nav-icon">☰</span>
+              <span>Statements</span>
+            </button>
+          </nav>
+          <footer class="kiosk-drawer-foot">
+            <p class="kiosk-drawer-help">Sync πριν το πρώτο scan · Statements για ιστορικό.</p>
+            <p id="kiosk-admin-hotspot-version" class="kiosk-app-version" title="">
+              Ergani Scanner v1.0
+            </p>
+          </footer>
+        </aside>
+      </div>
+
+      <div id="kiosk-camera-help" class="kiosk-camera-help hidden" aria-hidden="true">
+        <div class="kiosk-camera-help-backdrop"></div>
+        <div class="kiosk-camera-help-panel">
+          <h3>Ρυθμίσεις κάμερας</h3>
+          <p id="kiosk-camera-help-lead" class="kiosk-camera-help-lead">
+            Για Check-in / Check-out χρειάζεται πρόσβαση στην κάμερα.
+          </p>
+          <ol id="kiosk-camera-help-steps" class="kiosk-camera-help-steps"></ol>
+          <button type="button" id="kiosk-btn-camera-retry" class="kiosk-btn-connect">
+            Ξαναδοκίμασε κάμερα
+          </button>
+          <button type="button" id="kiosk-btn-camera-close" class="btn-cancel">
+            Κλείσιμο
+          </button>
+        </div>
+      </div>
+
+      <div id="kiosk-punch-confirm" class="kiosk-punch-confirm hidden" aria-hidden="true">
+        <div class="kiosk-punch-confirm-backdrop"></div>
+        <div class="kiosk-punch-confirm-panel">
+          <h3>Επιβεβαίωση</h3>
+          <p id="kiosk-confirm-movement" class="kiosk-confirm-movement">—</p>
+          <p id="kiosk-confirm-details" class="kiosk-confirm-details">—</p>
+          <p id="kiosk-confirm-warning" class="kiosk-confirm-warning hidden"></p>
+          <button type="button" id="kiosk-btn-confirm-yes" class="kiosk-btn-connect">
+            Επιβεβαίωση &amp; αποστολή
+          </button>
+          <button type="button" id="kiosk-btn-confirm-no" class="btn-cancel">
+            Άκυρο — ξανά σάρωση
+          </button>
+        </div>
+      </div>
+
+      <div id="kiosk-scanner-overlay" class="scanner-overlay hidden" aria-hidden="true">
+        <div class="scanner-panel">
+          <p id="kiosk-scanner-title" class="scanner-title">Σάρωση QR</p>
+          <div id="kiosk-qr-reader" class="qr-reader"></div>
+          <button type="button" id="kiosk-btn-scanner-cancel" class="btn-cancel">Άκυρο</button>
+        </div>
+      </div>
+      <div id="kiosk-toast" class="toast hidden" role="status"></div>
+    </div>
+
+    <div id="app-kiosk-setup" class="app-kiosk-setup app-gate app-gate--mobile hidden" aria-hidden="true">
+      <div class="gate-box gate-box--mobile">
+        <p id="kiosk-admin-hotspot-brand" class="gate-brand">Ergani</p>
+        <p class="gate-sub">Σύνδεση εργοδότη</p>
+        <h2 class="gate-title">Εταιρεία</h2>
+        <p class="gate-hint">
+          Διάλεξε εταιρεία για Check-in / Check-out. Όλα τα χτυπήματα γίνονται μόνο
+          για την επιλεγμένη εταιρεία.
+        </p>
+        <select id="kiosk-setup-company" class="gate-input gate-select">
+          <option value="">— Επιλογή εταιρείας —</option>
+        </select>
+        <button
+          type="button"
+          id="kiosk-setup-connect"
+          class="btn btn-primary gate-btn"
+          disabled
+        >
+          Συνέχεια στο Scanner
+        </button>
+        <p id="kiosk-setup-status" class="gate-status hidden" role="alert"></p>
+      </div>
+    </div>
+
+    <div id="app-gate" class="app-gate app-gate--mobile hidden">
+      <div class="gate-box gate-box--mobile">
+        <p class="gate-brand">Ergani</p>
+        <p class="gate-sub">Σύνδεση εργοδότη</p>
+
+        <form id="gate-login-form" class="gate-step" autocomplete="on">
+          <h2 class="gate-title">Σύνδεση admin</h2>
+          <input
+            id="app-username"
+            class="gate-input"
+            type="text"
+            name="username"
+            placeholder="Όνομα χρήστη"
+            autocomplete="username"
+            required
+            autofocus
+          />
+          <input
+            id="app-password"
+            class="gate-input"
+            type="password"
+            name="password"
+            placeholder="Κωδικός εφαρμογής"
+            autocomplete="current-password"
+            required
+            minlength="1"
+          />
+          <button type="submit" id="btn-gate-login" class="btn btn-primary gate-btn">
+            Σύνδεση
+          </button>
+        </form>
+
+        <div id="gate-step-company" class="gate-step hidden">
+          <h2 class="gate-title">2. Εταιρεία</h2>
+          <p class="gate-hint">
+            Οι κωδικοί Ergani είναι αποθηκευμένοι. Διάλεξε εταιρεία — η σύνδεση γίνεται
+            αυτόματα.
+          </p>
+          <select id="company-select" class="gate-input gate-select">
+            <option value="">— Επιλογή εταιρείας —</option>
+          </select>
+          <button type="button" id="btn-gate-company" class="btn btn-primary gate-btn" disabled>
+            Σύνδεση στην εταιρεία
+          </button>
+          <button type="button" id="btn-gate-admin-only" class="btn btn-secondary gate-btn hidden">
+            Διαχείριση (admin)
+          </button>
+        </div>
+        <p id="gate-status" class="gate-status hidden" role="alert"></p>
+      </div>
+    </div>
+
+    <div id="app-layout" class="layout layout--mobile hidden">
+      <header class="mobile-admin-bar">
+        <button type="button" id="btn-mobile-back-kiosk" class="btn btn-secondary btn-sm">
+          ← Scanner
+        </button>
+        <span class="mobile-admin-title">Admin</span>
+        <button type="button" id="btn-mobile-menu" class="kiosk-icon-btn" aria-label="Μενού admin">
+          ☰
+        </button>
+      </header>
+      <aside class="sidebar sidebar--mobile" id="admin-sidebar">
+        <div class="brand">
+          <h1>Ergani UI</h1>
+          <p>SDK demo — τοπική χρήση</p>
+        </div>
+        <div id="sidebar-company-block" class="sidebar-company hidden">
+          <label for="sidebar-company-select" class="sidebar-company-label">Εταιρεία</label>
+          <select id="sidebar-company-select" class="sidebar-company-select"></select>
+        </div>
+        <nav>
+          <ul class="nav" id="nav">
+            <li>
+              <button type="button" data-panel="admin" disabled class="nav-admin hidden">
+                Διαχείριση
+              </button>
+            </li>
+            <li><button type="button" data-panel="employer" disabled>Εργοδότης</button></li>
+            <li><button type="button" data-panel="branches" disabled class="active">Παραρτήματα</button></li>
+            <li><button type="button" data-panel="personnel" disabled>Προσωπικό</button></li>
+            <li><button type="button" data-panel="card-punches" disabled>Χτυπήματα κάρτας</button></li>
+            <li><button type="button" data-panel="workcard" disabled>Ψηφιακή κάρτα</button></li>
+            <li><button type="button" data-panel="overtime" disabled>Υπερωρίες</button></li>
+            <li><button type="button" data-panel="daily" disabled>Ημερήσιο πρόγραμμα</button></li>
+            <li><button type="button" data-panel="weekly" disabled>Εβδομαδιαίο πρόγραμμα</button></li>
+            <li><button type="button" data-panel="services" disabled>Λίστα υπηρεσιών</button></li>
+          </ul>
+        </nav>
+        <div class="sidebar-footer">
+          <span id="conn-badge" class="badge">Ασύνδετος</span>
+          <p id="app-user-label" class="sidebar-user hidden"></p>
+          <button type="button" id="btn-back-kiosk" class="btn btn-secondary btn-sm hidden">
+            ← Σάρωση κάρτας
+          </button>
+          <button type="button" id="btn-app-logout" class="btn btn-secondary btn-sm hidden">
+            Έξοδος
+          </button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div id="global-status" class="status-bar info hidden"></div>
+
+        <section id="panel-admin" class="panel panel-wide">
+          <h2>Διαχείριση (admin)</h2>
+          <p class="lead">
+            Πρόσθεσε εταιρείες με κωδικούς Ergani, δημιούργησε χρήστες και όρισε σε ποιες
+            εταιρείες έχουν πρόσβαση. Ο admin βλέπει όλες τις εταιρείες στο dropdown.
+          </p>
+          <div class="admin-grid">
+            <div class="card">
+              <h3 class="section-label">Εταιρείες</h3>
+              <form id="form-admin-company" class="admin-form">
+                <input type="hidden" id="ac-id" />
+                <div class="field">
+                  <label for="ac-name">Όνομα εταιρείας</label>
+                  <input id="ac-name" required />
+                </div>
+                <div class="grid-2">
+                  <div class="field">
+                    <label for="ac-ergani-user">Χρήστης Ergani</label>
+                    <input id="ac-ergani-user" required />
+                  </div>
+                  <div class="field">
+                    <label for="ac-ergani-pass">Κωδικός Ergani</label>
+                    <input id="ac-ergani-pass" type="password" />
+                  </div>
+                </div>
+                <div class="grid-2">
+                  <div class="field">
+                    <label for="ac-user-type">UserType</label>
+                    <select id="ac-user-type">
+                      <option value="01">01 — Integrator</option>
+                      <option value="02" selected>02 — Portal</option>
+                      <option value="03">03 — ΕΦΚΑ</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="ac-base-url">Base URL</label>
+                    <input id="ac-base-url" value="https://eservices.yeka.gr/WebservicesAPI/Api" />
+                  </div>
+                </div>
+                <div class="actions-row">
+                  <button type="submit" class="btn btn-primary">Αποθήκευση εταιρείας</button>
+                  <button type="button" id="ac-reset" class="btn btn-secondary">Νέα</button>
+                </div>
+              </form>
+              <div id="admin-companies-table-wrap" class="admin-table-wrap"></div>
+            </div>
+            <div class="card">
+              <h3 class="section-label">Λογαριασμοί</h3>
+              <form id="form-admin-user" class="admin-form">
+                <input type="hidden" id="au-id" />
+                <div class="grid-2">
+                  <div class="field">
+                    <label for="au-username">Χρήστης</label>
+                    <input id="au-username" required />
+                  </div>
+                  <div class="field">
+                    <label for="au-password">Κωδικός</label>
+                    <input
+                      id="au-password"
+                      type="password"
+                      placeholder="Υποχρεωτικό για νέο χρήστη"
+                    />
+                  </div>
+                </div>
+                <div class="grid-2">
+                  <div class="field">
+                    <label for="au-role">Ρόλος</label>
+                    <select id="au-role">
+                      <option value="user">Χρήστης</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="au-active">Ενεργός</label>
+                    <select id="au-active">
+                      <option value="1">Ναι</option>
+                      <option value="0">Όχι</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Εταιρείες (πρόσβαση)</label>
+                  <div id="au-company-checks" class="company-checks"></div>
+                </div>
+                <div class="actions-row">
+                  <button type="submit" class="btn btn-primary">Αποθήκευση χρήστη</button>
+                  <button type="button" id="au-reset" class="btn btn-secondary">Νέος</button>
+                </div>
+              </form>
+              <div id="admin-users-table-wrap" class="admin-table-wrap"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-employer" class="panel">
+          <h2>Στοιχεία εργοδότη</h2>
+          <p class="lead">Ανάκτηση μέσω υπηρεσίας EX_BASE_01.</p>
+          <div class="card">
+            <button type="button" id="btn-refresh-employer" class="btn btn-secondary">Ανανέωση</button>
+            <dl class="employer-summary" id="employer-summary"></dl>
+          </div>
+        </section>
+
+        <section id="panel-branches" class="panel active">
+          <h2>Παραρτήματα</h2>
+          <p class="lead">Ανάκτηση μέσω υπηρεσίας EX_BASE_02 — χρησιμοποιούνται στις υποβολές.</p>
+          <div class="card">
+            <button type="button" id="btn-refresh-branches" class="btn btn-secondary">Ανανέωση</button>
+            <table class="data" id="branches-table">
+              <thead>
+                <tr>
+                  <th>Α/Α</th>
+                  <th>Διεύθυνση</th>
+                  <th>SEPE</th>
+                  <th>ΚΑΔ</th>
+                  <th>Κατάσταση</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="panel-personnel" class="panel panel-wide">
+          <div class="ergani-screen ergani-screen--dark">
+            <div class="personnel-toolbar">
+              <div>
+                <h2 class="ergani-title">Προσωπικό</h2>
+                <p class="ergani-lead">
+                  ΑΦΜ, όνομα, επώνυμο — από Ergani, αποθηκευμένα στο Firebase.
+                </p>
+                <p id="personnel-sync-info" class="ergani-hint"></p>
+                <p id="personnel-count" class="personnel-meta"></p>
+              </div>
+              <button type="button" id="btn-sync-personnel" class="btn btn-primary">
+                Σύνδεση με Ergani
+              </button>
+            </div>
+
+            <div class="ergani-results-wrap">
+              <table class="ergani-results-table" id="personnel-table">
+                <thead>
+                  <tr>
+                    <th>ΑΦΜ</th>
+                    <th>Όνομα</th>
+                    <th>Επώνυμο</th>
+                  </tr>
+                </thead>
+                <tbody id="personnel-body">
+                  <tr class="personnel-empty">
+                    <td colspan="3">Πάτα «Σύνδεση με Ergani» για να φορτώσεις το προσωπικό.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-card-punches" class="panel panel-wide">
+          <div class="ergani-screen ergani-screen--dark">
+            <div class="personnel-toolbar">
+              <div>
+                <h2 class="ergani-title">Χτυπήματα κάρτας</h2>
+                <p class="ergani-lead">
+                  Όλες οι προσσελεύσεις και αποχωρήσεις από Ergani — όνομα, ημέρα και ώρα.
+                </p>
+                <p id="punches-sync-info" class="ergani-hint"></p>
+                <p id="punches-count" class="personnel-meta"></p>
+              </div>
+              <button type="button" id="btn-sync-punches" class="btn btn-primary">
+                Φόρτωση από Ergani
+              </button>
+            </div>
+
+            <div class="punches-filters card punches-filters--dark">
+              <div class="grid-3">
+                <div class="field">
+                  <label for="punches-date-from">Από</label>
+                  <input type="date" id="punches-date-from" />
+                </div>
+                <div class="field">
+                  <label for="punches-date-to">Έως</label>
+                  <input type="date" id="punches-date-to" />
+                </div>
+                <div class="field">
+                  <label for="punches-branch">Παράρτημα (προαιρετικό)</label>
+                  <select id="punches-branch">
+                    <option value="">Όλα</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="ergani-results-wrap">
+              <table class="ergani-results-table" id="punches-table">
+                <thead>
+                  <tr>
+                    <th>Όνομα</th>
+                    <th>Ημερομηνία</th>
+                    <th>Ώρα</th>
+                    <th>Κίνηση</th>
+                  </tr>
+                </thead>
+                <tbody id="punches-body">
+                  <tr class="personnel-empty">
+                    <td colspan="4">
+                      Επίλεξε διάστημα και πάτα «Φόρτωση από Ergani».
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-workcard" class="panel panel-wide wc-panel">
+          <h2>Ψηφιακή κάρτα εργασίας</h2>
+          <p class="lead">
+            <strong>Σήμερα:</strong> προσωπικό με ώρες · Check-in/out ανά άτομο.
+            <strong>Εβδομάδα:</strong> πίνακας — κλικ σε κελί για ώρες Πρ./Απ. · υποβολή
+            μαζική από <strong>Πρ.</strong> / <strong>Απ.</strong> στην ημέρα.
+          </p>
+          <form id="form-workcard" class="card">
+            <div class="grid-2">
+              <div class="field">
+                <label for="wc-employer-afm">Α.Φ.Μ. εργοδότη</label>
+                <input id="wc-employer-afm" required />
+              </div>
+              <div class="field">
+                <label for="wc-branch">Α/Α παραρτήματος</label>
+                <select id="wc-branch" required></select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="wc-comments">Σχόλια (για όλη την υποβολή)</label>
+              <input id="wc-comments" />
+            </div>
+
+            <h3 class="section-label">Σήμερα — προσωπικό &amp; ώρες Ergani</h3>
+            <p class="hint">
+              Οι ώρες έρχονται από το κελί της σημερινής ημέρας στον πίνακα (ή από το +
+              κάτω δεξιά).
+            </p>
+            <div id="wc-today-list" class="wc-today-list">
+              <p class="hint">Φόρτωση προσωπικού…</p>
+            </div>
+
+            <h3 class="section-label">Πρόγραμμα εβδομάδας</h3>
+            <div class="shiftgrid-week-nav">
+              <button type="button" id="wc-week-prev" class="btn btn-secondary">← Προηγ. εβδομάδα</button>
+              <div class="field shiftgrid-week-field">
+                <label for="wc-week-start">Εβδομάδα (Δευτέρα)</label>
+                <input id="wc-week-start" type="date" required />
+              </div>
+              <button type="button" id="wc-week-next" class="btn btn-secondary">Επόμ. εβδομάδα →</button>
+            </div>
+            <div class="actions-row" style="margin-bottom: 0.75rem">
+              <button type="button" id="wc-import-personnel" class="btn btn-secondary">
+                Φόρτωση από Προσωπικό
+              </button>
+              <button type="button" id="wc-add-employee" class="btn btn-secondary">+ Εργαζόμενος</button>
+              <button type="button" id="btn-wc-paste" class="btn btn-secondary">Επικόλληση λίστας</button>
+            </div>
+            <p class="hint">
+              Κενά κελιά — <strong>κλικ</strong> για μικρό πίνακα ώρων (Πρ./Απ. ή ΡΕΠΟ).
+              Επικόλληση: <code>ΑΦΜ, Όνομα, Επώνυμο</code>.
+            </p>
+            <div class="shiftgrid-table-wrap shiftgrid-screen">
+              <table class="shiftgrid-table" id="shiftgrid-table">
+                <thead id="shiftgrid-head"></thead>
+                <tbody id="shiftgrid-body">
+                  <tr>
+                    <td colspan="8" class="shiftgrid-empty">
+                      Φόρτωσε προσωπικό ή πρόσθεσε εργαζόμενους για να εμφανιστεί ο πίνακας.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div
+              id="shift-cell-popover"
+              class="shift-popover hidden"
+              role="dialog"
+              aria-label="Ώρες βάρδιας"
+            >
+              <p class="shift-popover-title" id="shift-popover-title"></p>
+              <table class="shift-popover-table">
+                <tbody>
+                  <tr>
+                    <th scope="row"><label for="shift-popover-arrival">Προσέλευση</label></th>
+                    <td>
+                      <input
+                        id="shift-popover-arrival"
+                        type="text"
+                        class="shift-time-24"
+                        placeholder="09:00"
+                        maxlength="5"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        spellcheck="false"
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row"><label for="shift-popover-departure">Αποχώρηση</label></th>
+                    <td>
+                      <input
+                        id="shift-popover-departure"
+                        type="text"
+                        class="shift-time-24"
+                        placeholder="17:00"
+                        maxlength="5"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        spellcheck="false"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="shift-popover-hint">24ωρη μορφή · π.χ. 09:00, 13:00 (χωρίς πμ/μμ)</p>
+              <label class="shift-popover-repo">
+                <input type="checkbox" id="shift-popover-off" />
+                ΡΕΠΟ (χωρίς κάρτα)
+              </label>
+              <div class="shift-popover-actions">
+                <button type="button" id="shift-popover-save" class="btn btn-primary btn-sm">
+                  OK
+                </button>
+                <button type="button" id="shift-popover-clear" class="btn btn-secondary btn-sm">
+                  Καθάρισμα
+                </button>
+                <button type="button" id="shift-popover-cancel" class="btn btn-secondary btn-sm">
+                  Άκυρο
+                </button>
+              </div>
+            </div>
+            <div class="field" style="margin-top: 1rem">
+              <label for="wc-late">Αιτιολογία εκπρόθεσμου (προαιρετικό)</label>
+              <select id="wc-late">
+                <option value="">—</option>
+                <option value="POWER_OUTAGE">Διακοπή ρεύματος / τηλεπικοινωνίες</option>
+                <option value="EMPLOYER_SYSTEMS_UNAVAILABLE">Πρόβλημα συστημάτων εργοδότη</option>
+                <option value="ERGANI_SYSTEMS_UNAVAILABLE">Πρόβλημα σύνδεσης Ergani</option>
+              </select>
+            </div>
+            <p class="hint">
+              Για ώρες στο παρελθόν μπορεί να απαιτείται αιτιολογία εκπρόθεσμου.
+            </p>
+          </form>
+          <div id="workcard-results" class="results hidden"></div>
+        </section>
+
+        <button
+          type="button"
+          id="wc-manual-fab"
+          class="wc-fab hidden"
+          title="Χειροκίνητο check-in / check-out"
+          aria-label="Άνοιγμα προσωπικού"
+        >
+          +
+        </button>
+
+        <div id="wc-manual-sheet" class="wc-manual-sheet hidden" aria-hidden="true">
+          <div class="wc-manual-sheet-backdrop"></div>
+          <div class="wc-manual-sheet-panel">
+            <h3>Προσωπικό — Check-in / Check-out</h3>
+            <p class="hint">Επίλεξε άτομα και ώρα αποστολής στο Ergani.</p>
+            <div class="grid-2 wc-manual-times">
+              <div class="field">
+                <label for="wc-manual-date">Ημερομηνία</label>
+                <input id="wc-manual-date" type="date" required />
+              </div>
+              <div class="field">
+                <label for="wc-manual-arrival">Ώρα Check-in (Πρ.)</label>
+                <input
+                  id="wc-manual-arrival"
+                  type="text"
+                  class="shift-time-24"
+                  placeholder="09:00"
+                  maxlength="5"
+                />
+              </div>
+              <div class="field">
+                <label for="wc-manual-departure">Ώρα Check-out (Απ.)</label>
+                <input
+                  id="wc-manual-departure"
+                  type="text"
+                  class="shift-time-24"
+                  placeholder="17:00"
+                  maxlength="5"
+                />
+              </div>
+            </div>
+            <div class="wc-manual-toolbar">
+              <button type="button" id="wc-manual-select-all" class="btn btn-secondary btn-sm">
+                Επιλογή όλων
+              </button>
+              <button type="button" id="wc-manual-select-none" class="btn btn-secondary btn-sm">
+                Καμία
+              </button>
+            </div>
+            <div id="wc-manual-list" class="wc-manual-list"></div>
+            <div class="wc-manual-actions">
+              <button type="button" id="wc-manual-checkin" class="btn btn-primary">
+                Check-in επιλεγμένων
+              </button>
+              <button type="button" id="wc-manual-checkout" class="btn btn-secondary">
+                Check-out επιλεγμένων
+              </button>
+              <button type="button" id="wc-manual-close" class="btn btn-secondary">
+                Κλείσιμο
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <section id="panel-overtime" class="panel">
+          <h2>Υπερωρίες</h2>
+          <p class="lead">Υποβολή δήλωσης υπερωριών (OvTime).</p>
+          <form id="form-overtime" class="card">
+            <div class="grid-2">
+              <div class="field">
+                <label for="ot-branch">Παράρτημα</label>
+                <select id="ot-branch" required></select>
+              </div>
+              <div class="field">
+                <label for="ot-legal-afm">Α.Φ.Μ. νόμιμου εκπροσώπου</label>
+                <input id="ot-legal-afm" required />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ot-primary-kad">ΚΑΔ κύριας</label>
+                <input id="ot-primary-kad" required />
+              </div>
+              <div class="field">
+                <label for="ot-branch-kad">ΚΑΔ παραρτήματος</label>
+                <input id="ot-branch-kad" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="ot-kallikratis">Καλλικράτης</label>
+              <input id="ot-kallikratis" />
+            </div>
+            <hr style="border-color: var(--border); margin: 1rem 0" />
+            <div class="grid-2">
+              <div class="field">
+                <label for="ot-employee-afm">Α.Φ.Μ. εργαζόμενου</label>
+                <input id="ot-employee-afm" required />
+              </div>
+              <div class="field">
+                <label for="ot-amka">Α.Μ.Κ.Α.</label>
+                <input id="ot-amka" required />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ot-first-name">Όνομα</label>
+                <input id="ot-first-name" required />
+              </div>
+              <div class="field">
+                <label for="ot-last-name">Επώνυμο</label>
+                <input id="ot-last-name" required />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ot-date">Ημερομηνία</label>
+                <input id="ot-date" type="date" required />
+              </div>
+              <div class="field">
+                <label for="ot-profession">Κωδικός ειδικότητας</label>
+                <input id="ot-profession" required />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ot-from">Ώρα από</label>
+                <input id="ot-from" type="time" value="18:00" required />
+              </div>
+              <div class="field">
+                <label for="ot-to">Ώρα έως</label>
+                <input id="ot-to" type="time" value="20:00" required />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ot-justification">Αιτιολογία</label>
+                <select id="ot-justification" required>
+                  <option value="EXCEPTIONAL_WORKLOAD">Εξαιρετική σωρεύση εργασίας</option>
+                  <option value="URGENT_SEASONAL_TASKS">Επείγουσες εποχιακές εργασίες</option>
+                  <option value="ACCIDENT_PREVENTION_OR_DAMAGE_RESTORATION">Πρόληψη ατυχημάτων</option>
+                  <option value="SUPPLEMENTARY_TASKS">Προεπισκευαστικές εργασίες</option>
+                  <option value="LOST_HOURS_SUDDEN_CAUSES">Αναπλήρωση — ξαφνικές αιτίες</option>
+                  <option value="LOST_HOURS_OFFICIAL_HOLIDAYS">Αναπλήρωση — αργίες</option>
+                  <option value="LOST_HOURS_WEATHER_CONDITIONS">Αναπλήρωση — καιρός</option>
+                  <option value="EMERGENCY_CLOSURE_DAY">Έκτακτες εργασίες κλεισίματος</option>
+                  <option value="NON_WORKDAY_TASKS">Εργασίες εκτός ωραρίου</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="ot-weekdays">Εβδομαδιαία απασχόληση</label>
+                <select id="ot-weekdays">
+                  <option value="5">5ήμερο</option>
+                  <option value="6">6ήμερο</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="ot-cancel" /> Ακύρωση υπερωρίας</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Υποβολή υπερωρίας</button>
+          </form>
+          <div id="overtime-results" class="results hidden"></div>
+        </section>
+
+        <section id="panel-daily" class="panel">
+          <h2>Ημερήσιο πρόγραμμα</h2>
+          <p class="lead">Για εργαζόμενους χωρίς σταθερό ωράριο (WTODaily).</p>
+          <form id="form-daily" class="card">
+            <div class="grid-2">
+              <div class="field">
+                <label for="ds-branch">Παράρτημα</label>
+                <select id="ds-branch" required></select>
+              </div>
+              <div class="field">
+                <label for="ds-date">Ημερομηνία προγράμματος</label>
+                <input id="ds-date" type="date" required />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ds-employee-afm">Α.Φ.Μ.</label>
+                <input id="ds-employee-afm" required />
+              </div>
+              <div class="field">
+                <label for="ds-first-name">Όνομα / Επώνυμο</label>
+                <div class="grid-2" style="gap: 0.5rem">
+                  <input id="ds-first-name" placeholder="Όνομα" required />
+                  <input id="ds-last-name" placeholder="Επώνυμο" required />
+                </div>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ds-work-type">Τύπος</label>
+                <select id="ds-work-type">
+                  <option value="WORK_FROM_OFFICE">Εργασία</option>
+                  <option value="WORK_FROM_HOME">Τηλεργασία</option>
+                  <option value="REST_DAY">Ρεπό</option>
+                  <option value="ABSENT">Μη εργασία</option>
+                </select>
+              </div>
+              <div class="grid-2" style="gap: 0.5rem">
+                <div class="field">
+                  <label for="ds-from">Από</label>
+                  <input id="ds-from" type="time" value="09:00" />
+                </div>
+                <div class="field">
+                  <label for="ds-to">Έως</label>
+                  <input id="ds-to" type="time" value="17:00" />
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Υποβολή ημερήσιου</button>
+          </form>
+          <div id="daily-results" class="results hidden"></div>
+        </section>
+
+        <section id="panel-weekly" class="panel">
+          <h2>Εβδομαδιαίο πρόγραμμα</h2>
+          <p class="lead">Για σταθερό ωράριο — μία ημέρα ανά υποβολή (WTOWeek).</p>
+          <form id="form-weekly" class="card">
+            <div class="grid-2">
+              <div class="field">
+                <label for="ws-branch">Παράρτημα</label>
+                <select id="ws-branch" required></select>
+              </div>
+              <div class="field">
+                <label for="ws-date">Ημέρα προγράμματος</label>
+                <input id="ws-date" type="date" required />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ws-from-period">Περίοδος από</label>
+                <input id="ws-from-period" type="date" required />
+              </div>
+              <div class="field">
+                <label for="ws-to-period">Περίοδος έως</label>
+                <input id="ws-to-period" type="date" required />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ws-employee-afm">Α.Φ.Μ.</label>
+                <input id="ws-employee-afm" required />
+              </div>
+              <div class="field">
+                <label for="ws-first-name">Όνομα / Επώνυμο</label>
+                <div class="grid-2" style="gap: 0.5rem">
+                  <input id="ws-first-name" placeholder="Όνομα" required />
+                  <input id="ws-last-name" placeholder="Επώνυμο" required />
+                </div>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="ws-work-type">Τύπος</label>
+                <select id="ws-work-type">
+                  <option value="WORK_FROM_OFFICE">Εργασία</option>
+                  <option value="WORK_FROM_HOME">Τηλεργασία</option>
+                  <option value="REST_DAY">Ρεπό</option>
+                  <option value="ABSENT">Μη εργασία</option>
+                </select>
+              </div>
+              <div class="grid-2" style="gap: 0.5rem">
+                <div class="field">
+                  <label for="ws-from">Από</label>
+                  <input id="ws-from" type="time" value="09:00" />
+                </div>
+                <div class="field">
+                  <label for="ws-to">Έως</label>
+                  <input id="ws-to" type="time" value="17:00" />
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Υποβολή εβδομαδιαίου</button>
+          </form>
+          <div id="weekly-results" class="results hidden"></div>
+        </section>
+
+        <section id="panel-services" class="panel">
+          <h2>Λίστα υπηρεσιών API</h2>
+          <p class="lead">GET /WebServices/ServicesList — για έλεγχο διαθέσιμων υπηρεσιών.</p>
+          <div class="card">
+            <button type="button" id="btn-services" class="btn btn-secondary">Φόρτωση</button>
+            <div id="services-results" class="results hidden"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script id="kiosk-bootstrap-data" type="application/json">__KIOSK_BOOTSTRAP__</script>
+    <script>
+      window.KIOSK_KEY = "__KIOSK_KEY__";
+      try {
+        const bootRaw = document.getElementById("kiosk-bootstrap-data")?.textContent || "{}";
+        window.KIOSK_BOOTSTRAP = JSON.parse(bootRaw);
+      } catch {
+        window.KIOSK_BOOTSTRAP = { companies: [], kiosk_ready: false };
+      }
+    </script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="/static/kiosk-mode.js"></script>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

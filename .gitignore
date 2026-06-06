@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+ui/.env
+*.pem
+
+# Firebase service account (never commit)
+*-firebase-adminsdk*.json
+firebase-credentials.json
+ui/firebase-credentials.json
