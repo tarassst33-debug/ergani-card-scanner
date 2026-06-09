@@ -1,11 +1,14 @@
 /** Kiosk — scanner, δεξιά slide bar, εταιρεία (localStorage), Ergani connect. */
 (function () {
-  const key = (window.KIOSK_KEY || "").trim();
-  const bootstrap =
+  function getKioskKey() {
+    return (window.KIOSK_KEY || "").trim();
+  }
+  let bootstrap =
     typeof window.KIOSK_BOOTSTRAP === "object" && window.KIOSK_BOOTSTRAP
       ? window.KIOSK_BOOTSTRAP
       : null;
   const STORAGE_COMPANY = "ergani_kiosk_company_id";
+  let loginBound = false;
   let config = null;
   let companies = [];
   let scanner = null;
@@ -40,7 +43,128 @@
     el.classList.remove("hidden");
   }
 
+  function webGateEnabled() {
+    if (typeof window.KIOSK_WEB_GATE === "boolean") {
+      return window.KIOSK_WEB_GATE;
+    }
+    return Boolean(bootstrap?.web_gate);
+  }
+
+  function setLoginStatus(text, kind) {
+    setSetupStatus(text, kind);
+  }
+
+  function showSetupLoginStep() {
+    $("kiosk-setup-step-login")?.classList.remove("hidden");
+    $("kiosk-setup-step-company")?.classList.add("hidden");
+    $("kiosk-web-username")?.focus();
+  }
+
+  function showSetupCompanyStep() {
+    $("kiosk-setup-step-login")?.classList.add("hidden");
+    $("kiosk-setup-step-company")?.classList.remove("hidden");
+  }
+
+  async function applyBootstrap(data) {
+    bootstrap = data || {};
+    window.KIOSK_BOOTSTRAP = bootstrap;
+    if (data?.kiosk_key) {
+      window.KIOSK_KEY = data.kiosk_key;
+    }
+    if (Array.isArray(data?.companies)) {
+      companies = data.companies;
+    }
+  }
+
+  async function fetchBootstrap() {
+    const res = await fetch("/api/kiosk/bootstrap", { credentials: "same-origin" });
+    const data = await safeJson(res);
+    if (!res.ok) {
+      throw new Error(data.error || "Αποτυχία φόρτωσης.");
+    }
+    await applyBootstrap(data);
+    return data;
+  }
+
+  async function checkWebAuth() {
+    const res = await fetch("/api/kiosk/web-auth/status", { credentials: "same-origin" });
+    const data = await safeJson(res);
+    if (!res.ok) {
+      throw new Error(data.error || "Σφάλμα ελέγχου σύνδεσης.");
+    }
+    bootstrap = { ...(bootstrap || {}), web_gate: Boolean(data.web_gate) };
+    window.KIOSK_BOOTSTRAP = bootstrap;
+    if (data.web_gate && !data.authenticated) {
+      return false;
+    }
+    if (data.web_gate) {
+      await fetchBootstrap();
+    }
+    return true;
+  }
+
+  function showLogin() {
+    showSetup();
+    showSetupLoginStep();
+    setLoginStatus("");
+  }
+
+  function hideLogin() {
+    showSetupCompanyStep();
+    setLoginStatus("");
+  }
+
+  async function submitKioskLogin() {
+    setLoginStatus("");
+    const username = $("kiosk-web-username")?.value.trim() || "";
+    const password = ($("kiosk-web-password")?.value || "").trim();
+    if (!username || !password) {
+      setLoginStatus("Συμπλήρωσε όνομα και κωδικό.", "err");
+      return;
+    }
+    const btn = $("kiosk-login-submit");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Σύνδεση…";
+    }
+    try {
+      const res = await fetch("/api/kiosk/web-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await safeJson(res);
+      if (!res.ok) {
+        throw new Error(data.error || "Λάθος όνομα ή κωδικός.");
+      }
+      if (data.web_gate !== false) {
+        await fetchBootstrap();
+      }
+      hideLogin();
+      await loadSetupScreen();
+    } catch (e) {
+      setLoginStatus(e.message || "Αποτυχία σύνδεσης.", "err");
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Σύνδεση";
+      }
+    }
+  }
+
+  function bindLoginEvents() {
+    if (loginBound) return;
+    loginBound = true;
+    bindAdminHotspots();
+    $("kiosk-login-form")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      void submitKioskLogin();
+    });
+  }
+
   function kioskKeyError() {
+    const key = getKioskKey();
     if (!key || key === "__KIOSK_KEY__") {
       return (
         "Λάθος server: άνοιξε http://<IP-Mac>:5050/ (όχι /static/) και κάνε restart:\n" +
@@ -99,7 +223,7 @@
   function headers(companyId) {
     const h = {
       "Content-Type": "application/json",
-      "X-Kiosk-Key": key,
+      "X-Kiosk-Key": getKioskKey(),
     };
     const cid = companyId ?? getSelectedCompanyId();
     if (cid != null && Number.isFinite(Number(cid)) && Number(cid) > 0) {
@@ -309,8 +433,13 @@
     document.body.classList.add("kiosk-active");
     $("app-kiosk-setup")?.classList.remove("hidden");
     $("app-kiosk-setup")?.setAttribute("aria-hidden", "false");
+    $("app-kiosk")?.classList.add("hidden");
     bindSetupEvents();
-    void loadSetupScreen();
+    bindLoginEvents();
+    if (!webGateEnabled()) {
+      showSetupCompanyStep();
+      void loadSetupScreen();
+    }
   }
 
   function hideSetup() {
@@ -394,14 +523,32 @@
     }
   }
 
+  function formatStmtDate(isoDate) {
+    if (!isoDate) return "—";
+    const parts = String(isoDate).slice(0, 10).split("-");
+    if (parts.length !== 3) return isoDate;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
   function formatPunchRow(p) {
     const name = p.full_name || `${p.last_name || ""} ${p.first_name || ""}`.trim();
     const label = p.movement_label || (p.movement_type === "ARRIVAL" ? "Check-in" : "Check-out");
-    const day = p.reference_date || p.movement_date || "";
-    const time = p.movement_time || "";
-    return `<li class="kiosk-stmt-item ${p.movement_type === "ARRIVAL" ? "is-in" : "is-out"}">
-      <strong>${label}</strong> · ${escapeHtml(name || p.afm || "—")}
-      <span class="kiosk-stmt-meta">${escapeHtml(day)} ${escapeHtml(time)}</span>
+    const day = formatStmtDate(p.reference_date || p.movement_date || p.date || "");
+    const time = p.movement_time || p.time || "—";
+    const afm = p.afm || p.employee_afm || "";
+    const kind = p.movement_type === "ARRIVAL" ? "is-in" : "is-out";
+    return `<li class="kiosk-stmt-card ${kind}">
+      <div class="kiosk-stmt-head">
+        <strong class="kiosk-stmt-type">${escapeHtml(label)}</strong>
+        <span class="kiosk-stmt-time">${escapeHtml(time)}</span>
+      </div>
+      <div class="kiosk-stmt-body">
+        <span class="kiosk-stmt-name">${escapeHtml(name || afm || "—")}</span>
+        ${afm ? `<span class="kiosk-stmt-vat">VAT: ${escapeHtml(afm)}</span>` : ""}
+      </div>
+      <div class="kiosk-stmt-foot">
+        <span class="kiosk-stmt-date">${escapeHtml(day)}</span>
+      </div>
     </li>`;
   }
 
@@ -836,10 +983,60 @@
       ?.addEventListener("click", hideCameraHelp);
   }
 
+  async function isWebAuthenticated() {
+    if (!webGateEnabled()) {
+      return true;
+    }
+    try {
+      const res = await fetch("/api/kiosk/web-auth/status", { credentials: "same-origin" });
+      if (!res.ok) {
+        return false;
+      }
+      const data = await safeJson(res);
+      window.KIOSK_WEB_GATE = Boolean(data.web_gate);
+      bootstrap = { ...(bootstrap || {}), web_gate: window.KIOSK_WEB_GATE };
+      return !data.web_gate || Boolean(data.authenticated);
+    } catch {
+      return false;
+    }
+  }
+
+  async function enterKioskFlow() {
+    document.body.classList.add("kiosk-only");
+    $("app-gate")?.classList.add("hidden");
+    hideSetup();
+    $("app-kiosk")?.classList.add("hidden");
+
+    if (webGateEnabled()) {
+      const authed = await isWebAuthenticated();
+      if (!authed) {
+        showLogin();
+        return;
+      }
+      try {
+        await fetchBootstrap();
+      } catch (e) {
+        showLogin();
+        setLoginStatus(e.message || "Αποτυχία φόρτωσης.", "err");
+        return;
+      }
+    }
+
+    if (needsSetup()) {
+      showSetup();
+      showSetupCompanyStep();
+      await loadSetupScreen();
+      return;
+    }
+    window.KioskMode.start();
+  }
+
   window.KioskMode = {
     needsSetup,
     showSetup,
     hideSetup,
+    showLogin,
+    enterKioskFlow,
     start() {
       document.body.classList.add("kiosk-active");
       hideSetup();

@@ -17,6 +17,7 @@ from firebase_db import get_firestore
 USERS_COLLECTION = "app_users"
 COMPANIES_COLLECTION = "companies"
 SHIFT_GRIDS_COLLECTION = "shift_grids"
+COMPANY_BRANCHES_COLLECTION = "company_branches"
 COMPANY_EMPLOYEES_COLLECTION = "company_employees"
 SUBMISSIONS_COLLECTION = "submissions"
 CARD_PUNCHES_COLLECTION = "card_punches"
@@ -96,8 +97,18 @@ def _schema_ref():
     return _db().collection(SCHEMA_DOC[0]).document(SCHEMA_DOC[1])
 
 
-def _shift_grid_ref(company_id: int):
-    return _db().collection(SHIFT_GRIDS_COLLECTION).document(str(company_id))
+def _shift_grid_doc_id(company_id: int, branch_number: int = 0) -> str:
+    return f"{company_id}_{int(branch_number)}"
+
+
+def _shift_grid_ref(company_id: int, branch_number: int = 0):
+    return _db().collection(SHIFT_GRIDS_COLLECTION).document(
+        _shift_grid_doc_id(company_id, branch_number)
+    )
+
+
+def _company_branches_ref(company_id: int):
+    return _db().collection(COMPANY_BRANCHES_COLLECTION).document(str(company_id))
 
 
 def _company_employees_ref(company_id: int):
@@ -113,7 +124,8 @@ def ensure_firestore_schema() -> None:
             "collections": {
                 "app_users": "Λογαριασμοί εφαρμογής",
                 "companies": "Εταιρείες + κρυπτογραφημένοι κωδικοί Ergani",
-                "shift_grids": "Πρόγραμμα βαρέων ανά εταιρεία",
+                "shift_grids": "Πρόγραμμα βαρέων ανά εταιρεία/υποκατάστημα",
+                "company_branches": "Υποκαταστήματα (μαγαζιά) ανά εταιρεία",
                 "company_employees": "Εργαζόμενοι ανά εταιρεία (από Ergani)",
                 "submissions": "Ιστορικό υποβολών (μελλοντικό)",
                 "meta": "Μετρητές ids και schema",
@@ -410,7 +422,13 @@ def update_company(
 
 def delete_company(company_id: int) -> None:
     _company_ref(company_id).delete()
-    _shift_grid_ref(company_id).delete()
+    _company_branches_ref(company_id).delete()
+    for doc in _db().collection(SHIFT_GRIDS_COLLECTION).stream():
+        data = doc.to_dict() or {}
+        if int(data.get("company_id", -1)) == company_id:
+            doc.reference.delete()
+        elif doc.id == str(company_id):
+            doc.reference.delete()
     _company_employees_ref(company_id).delete()
     for doc in _db().collection(USERS_COLLECTION).stream():
         data = doc.to_dict() or {}
@@ -470,8 +488,120 @@ def user_can_access_company(user_id: int, role: str, company_id: int) -> bool:
     return company_id in user_company_ids(user_id)
 
 
-def get_shift_grid(company_id: int) -> dict[str, Any] | None:
-    snap = _shift_grid_ref(company_id).get()
+def get_company_meta(company_id: int) -> dict[str, Any]:
+    snap = _company_ref(company_id).get()
+    if not snap.exists:
+        return {}
+    return snap.to_dict() or {}
+
+
+def company_requires_boss_pin(company_id: int) -> bool:
+    meta = get_company_meta(company_id)
+    return bool((meta.get("boss_access_pin_hash") or "").strip())
+
+
+def verify_company_boss_pin(company_id: int, pin: str) -> bool:
+    meta = get_company_meta(company_id)
+    pin_hash = (meta.get("boss_access_pin_hash") or "").strip()
+    if not pin_hash:
+        return True
+    return check_password_hash(pin_hash, (pin or "").strip())
+
+
+def set_company_boss_pin(company_id: int, pin: str | None) -> None:
+    ref = _company_ref(company_id)
+    if not pin or not pin.strip():
+        ref.update({"boss_access_pin_hash": firestore.DELETE_FIELD})
+        return
+    ref.update(
+        {
+            "boss_access_pin_hash": generate_password_hash(
+                pin.strip(), method="pbkdf2:sha256"
+            )
+        }
+    )
+
+
+def normalize_branch_row(row: dict[str, Any]) -> dict[str, Any]:
+    try:
+        branch_number = int(row.get("branch_number", 0))
+    except (TypeError, ValueError):
+        branch_number = 0
+    name = (row.get("name") or row.get("label") or "").strip()
+    address = (row.get("address") or "").strip()
+    return {
+        "branch_number": branch_number,
+        "name": name or f"Υποκατάστημα #{branch_number}",
+        "address": address,
+        "active": bool(row.get("active", True)),
+    }
+
+
+def get_company_branches(company_id: int) -> list[dict[str, Any]]:
+    snap = _company_branches_ref(company_id).get()
+    if not snap.exists:
+        return []
+    data = snap.to_dict() or {}
+    rows = data.get("branches") or []
+    out: list[dict[str, Any]] = []
+    for raw in rows:
+        if not isinstance(raw, dict):
+            continue
+        row = normalize_branch_row(raw)
+        if row["active"]:
+            out.append(row)
+    return sorted(out, key=lambda r: r["branch_number"])
+
+
+def save_company_branches(
+    company_id: int,
+    branches: list[dict[str, Any]],
+    *,
+    updated_by: str = "",
+) -> None:
+    rows: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for raw in branches:
+        if not isinstance(raw, dict):
+            continue
+        row = normalize_branch_row(raw)
+        if row["branch_number"] in seen:
+            continue
+        seen.add(row["branch_number"])
+        rows.append(row)
+    _company_branches_ref(company_id).set(
+        {
+            "company_id": company_id,
+            "branches": sorted(rows, key=lambda r: r["branch_number"]),
+            "updated_at": _now(),
+            "updated_by": updated_by,
+        },
+        merge=True,
+    )
+
+
+def ensure_default_company_branch(company_id: int, company_name: str) -> None:
+    if get_company_branches(company_id):
+        return
+    save_company_branches(
+        company_id,
+        [
+            {
+                "branch_number": 0,
+                "name": company_name,
+                "address": "",
+                "active": True,
+            }
+        ],
+    )
+
+
+def get_shift_grid(company_id: int, branch_number: int = 0) -> dict[str, Any] | None:
+    snap = _shift_grid_ref(company_id, branch_number).get()
+    if not snap.exists and branch_number == 0:
+        legacy = _db().collection(SHIFT_GRIDS_COLLECTION).document(str(company_id)).get()
+        if legacy.exists:
+            snap = legacy
     if not snap.exists:
         return None
     data = snap.to_dict() or {}
@@ -485,11 +615,13 @@ def save_shift_grid(
     company_id: int,
     grid: dict[str, Any],
     *,
+    branch_number: int = 0,
     updated_by: str = "",
 ) -> None:
-    _shift_grid_ref(company_id).set(
+    _shift_grid_ref(company_id, branch_number).set(
         {
             "company_id": company_id,
+            "branch_number": int(branch_number),
             "grid": grid,
             "updated_at": _now(),
             "updated_by": updated_by,

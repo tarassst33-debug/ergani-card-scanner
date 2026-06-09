@@ -6,6 +6,9 @@ import os
 import re
 from datetime import date, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
+
+ATHENS_TZ = ZoneInfo("Europe/Athens")
 
 from ergani.client import ErganiClient
 from ergani.models import CompanyWorkCard, WorkCard
@@ -14,6 +17,16 @@ from store import append_card_punches, get_company, get_company_employees, norma
 DEFAULT_BASE_URL = "https://eservices.yeka.gr/WebservicesAPI/Api"
 
 _AFM_RE = re.compile(r"\b(\d{9})\b")
+
+
+def athens_now() -> datetime:
+    return datetime.now(ATHENS_TZ)
+
+
+def to_athens(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=ATHENS_TZ)
+    return dt.astimezone(ATHENS_TZ)
 
 
 def kiosk_device_key() -> str:
@@ -154,7 +167,7 @@ def lookup_employee(company_id: int, afm: str) -> dict[str, Any] | None:
     return None
 
 
-def submit_kiosk_punch(
+def submit_employee_punch(
     *,
     company_id: int,
     secret_key: str,
@@ -163,6 +176,9 @@ def submit_kiosk_punch(
     employer_afm: str,
     branch_number: int,
     movement_at: datetime | None = None,
+    late_declaration_justification: str | None = None,
+    punch_source: str = "kiosk",
+    submitted_by: str = "kiosk",
 ) -> dict[str, Any]:
     employee = lookup_employee(company_id, employee_afm)
     if not employee:
@@ -171,7 +187,7 @@ def submit_kiosk_punch(
             "Συγχρόνισε προσωπικό από το admin."
         )
 
-    when = movement_at or datetime.now().astimezone()
+    when = to_athens(movement_at) if movement_at else athens_now()
     submission_date: date = when.date()
     card = WorkCard(
         employee_tax_identification_number=employee_afm,
@@ -180,7 +196,7 @@ def submit_kiosk_punch(
         work_card_movement_type=movement_type,
         work_card_submission_date=submission_date,
         work_card_movement_datetime=when,
-        late_declaration_justification=None,
+        late_declaration_justification=late_declaration_justification,
     )
     company_card = CompanyWorkCard(
         employer_tax_identification_number=employer_afm,
@@ -206,16 +222,19 @@ def submit_kiosk_punch(
         [
             {
                 "employee_afm": entry["employee_afm"],
+                "afm": employee_afm,
                 "first_name": entry["first_name"],
                 "last_name": entry["last_name"],
                 "movement_type": movement_type,
                 "date": submission_date.isoformat(),
+                "reference_date": submission_date.isoformat(),
                 "time": when.strftime("%H:%M"),
+                "movement_datetime": when.isoformat(),
                 "branch_number": branch_number,
-                "source": "kiosk",
+                "source": punch_source,
             }
         ],
-        submitted_by="kiosk",
+        submitted_by=submitted_by,
     )
 
     label = "Προσέλευση" if movement_type == "ARRIVAL" else "Αποχώρηση"
@@ -232,3 +251,24 @@ def submit_kiosk_punch(
         },
         "movement_datetime": when.isoformat(),
     }
+
+
+def submit_kiosk_punch(
+    *,
+    company_id: int,
+    secret_key: str,
+    movement_type: str,
+    employee_afm: str,
+    employer_afm: str,
+    branch_number: int,
+    movement_at: datetime | None = None,
+) -> dict[str, Any]:
+    return submit_employee_punch(
+        company_id=company_id,
+        secret_key=secret_key,
+        movement_type=movement_type,
+        employee_afm=employee_afm,
+        employer_afm=employer_afm,
+        branch_number=branch_number,
+        movement_at=movement_at,
+    )

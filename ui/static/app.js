@@ -66,7 +66,11 @@ function showKiosk() {
   hideStatus();
   $("#app-kiosk")?.classList.add("hidden");
   window.KioskMode?.stop?.();
-  window.KioskMode?.showSetup?.();
+  void window.KioskMode?.enterKioskFlow?.();
+}
+
+function showKioskFromAdmin() {
+  void window.KioskMode?.enterKioskFlow?.();
 }
 
 function hideKiosk() {
@@ -1501,7 +1505,6 @@ async function loadBranches() {
 }
 
 async function refreshSession() {
-  document.body.classList.add("kiosk-only");
   try {
     await api("/api/session", { method: "DELETE" });
   } catch {
@@ -1509,6 +1512,14 @@ async function refreshSession() {
   }
   try {
     await api("/api/auth/logout", { method: "POST" });
+  } catch {
+    /* ignore */
+  }
+  try {
+    await fetch("/api/kiosk/web-logout", {
+      method: "POST",
+      credentials: "same-origin",
+    });
   } catch {
     /* ignore */
   }
@@ -1641,7 +1652,7 @@ $("#btn-app-logout")?.addEventListener("click", async () => {
   const passInput = $("#app-password");
   if (userInput) userInput.value = "";
   if (passInput) passInput.value = "";
-  showKiosk();
+  showKioskFromAdmin();
 });
 
 async function returnToKioskScanner() {
@@ -1655,7 +1666,7 @@ async function returnToKioskScanner() {
   setConnected(false);
   hideStatus();
   $("#app-layout")?.classList.remove("sidebar-open");
-  showKiosk();
+  showKioskFromAdmin();
 }
 
 $("#btn-back-kiosk")?.addEventListener("click", () => void returnToKioskScanner());

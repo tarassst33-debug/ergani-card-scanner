@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+*.pyc
+.env
+ui/.env
+ui/secrets/
+firebase-debug.log
+firestore-debug.log
+mobile/
+docs/
+tests/
+*.md
+!README.md

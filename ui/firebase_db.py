@@ -61,28 +61,25 @@ def get_firestore():
 
     if not firebase_admin._apps:
         project_id = default_project_id()
-        if _emulator_host():
-            firebase_admin.initialize_app(options={"projectId": project_id})
-        else:
-            try:
-                cred_path = _credentials_path()
-                with cred_path.open(encoding="utf-8") as fh:
-                    cred_data = json.load(fh)
-                project_id = cred_data.get("project_id") or project_id
-                cred = credentials.Certificate(str(cred_path))
+        try:
+            cred_path = _credentials_path()
+            with cred_path.open(encoding="utf-8") as fh:
+                cred_data = json.load(fh)
+            project_id = cred_data.get("project_id") or project_id
+            cred = credentials.Certificate(str(cred_path))
+            firebase_admin.initialize_app(cred, {"projectId": project_id})
+        except RuntimeError:
+            if _emulator_host():
+                firebase_admin.initialize_app(options={"projectId": project_id})
+            elif os.environ.get("ERGANI_UI_USE_ADC", "").strip() in {
+                "1",
+                "true",
+                "yes",
+            }:
+                cred = credentials.ApplicationDefault()
                 firebase_admin.initialize_app(cred, {"projectId": project_id})
-            except RuntimeError:
-                if os.environ.get("ERGANI_UI_USE_ADC", "").strip() in {
-                    "1",
-                    "true",
-                    "yes",
-                }:
-                    cred = credentials.ApplicationDefault()
-                    firebase_admin.initialize_app(
-                        cred, {"projectId": project_id}
-                    )
-                else:
-                    raise
+            else:
+                raise
 
     _db = firestore.client()
     return _db

@@ -33,6 +33,7 @@ ui = [
 	"flask>=3.0.0,<4",
 	"firebase-admin>=6.5.0,<7",
 	"cryptography>=42.0.0,<44",
+	"gunicorn>=22.0.0,<24",
 ]
 
 [tool.uv.build-backend]

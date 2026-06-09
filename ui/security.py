@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 import time
 from collections import defaultdict
 from typing import TYPE_CHECKING
@@ -55,6 +56,27 @@ def manual_connect_enabled() -> bool:
         "true",
         "yes",
     }
+
+
+def kiosk_web_gate_credentials() -> tuple[str, str]:
+    return (
+        os.environ.get("ERGANI_KIOSK_WEB_USER", "").strip(),
+        os.environ.get("ERGANI_KIOSK_WEB_PASSWORD", "").strip(),
+    )
+
+
+def kiosk_web_gate_enabled() -> bool:
+    user, password = kiosk_web_gate_credentials()
+    return bool(user and password)
+
+
+def verify_kiosk_web_login(username: str, password: str) -> bool:
+    expected_user, expected_pass = kiosk_web_gate_credentials()
+    if not expected_user or not expected_pass:
+        return True
+    return secrets.compare_digest(
+        username.strip().casefold(), expected_user.casefold()
+    ) and secrets.compare_digest(password, expected_pass)
 
 
 def check_login_rate_limit(client_ip: str) -> str | None:

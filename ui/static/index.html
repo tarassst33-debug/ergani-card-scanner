@@ -140,26 +140,78 @@
     </div>
 
     <div id="app-kiosk-setup" class="app-kiosk-setup app-gate app-gate--mobile hidden" aria-hidden="true">
-      <div class="gate-box gate-box--mobile">
-        <p id="kiosk-admin-hotspot-brand" class="gate-brand">Ergani</p>
-        <p class="gate-sub">Σύνδεση εργοδότη</p>
-        <h2 class="gate-title">Εταιρεία</h2>
-        <p class="gate-hint">
-          Διάλεξε εταιρεία για Check-in / Check-out. Όλα τα χτυπήματα γίνονται μόνο
-          για την επιλεγμένη εταιρεία.
-        </p>
-        <select id="kiosk-setup-company" class="gate-input gate-select">
-          <option value="">— Επιλογή εταιρείας —</option>
-        </select>
-        <button
-          type="button"
-          id="kiosk-setup-connect"
-          class="btn btn-primary gate-btn"
-          disabled
-        >
-          Συνέχεια στο Scanner
-        </button>
-        <p id="kiosk-setup-status" class="gate-status hidden" role="alert"></p>
+      <div class="gate-shell">
+        <div class="gate-box gate-box--mobile gate-card">
+          <header class="gate-header">
+            <p id="kiosk-admin-hotspot-brand" class="gate-brand">Ergani</p>
+            <p class="gate-sub">Ψηφιακή κάρτα εργασίας</p>
+          </header>
+
+          <div id="kiosk-setup-step-login" class="gate-step hidden">
+            <div class="gate-step-head">
+              <span class="gate-step-badge">1 / 2</span>
+              <h2 class="gate-title">Σύνδεση</h2>
+              <p class="gate-hint">
+                Εισάγετε τα στοιχεία πρόσβασης για να συνεχίσετε στην επιλογή εταιρείας.
+              </p>
+            </div>
+            <form id="kiosk-login-form" class="gate-form" autocomplete="on">
+              <label class="gate-field" for="kiosk-web-username">
+                <span class="gate-label">Όνομα χρήστη</span>
+                <input
+                  id="kiosk-web-username"
+                  class="gate-input"
+                  type="text"
+                  name="username"
+                  autocomplete="username"
+                  required
+                />
+              </label>
+              <label class="gate-field" for="kiosk-web-password">
+                <span class="gate-label">Κωδικός</span>
+                <input
+                  id="kiosk-web-password"
+                  class="gate-input"
+                  type="password"
+                  name="password"
+                  autocomplete="current-password"
+                  required
+                  minlength="1"
+                />
+              </label>
+              <button type="submit" id="kiosk-login-submit" class="btn btn-primary gate-btn gate-btn--primary">
+                Σύνδεση
+              </button>
+            </form>
+          </div>
+
+          <div id="kiosk-setup-step-company" class="gate-step hidden">
+            <div class="gate-step-head">
+              <span class="gate-step-badge">2 / 2</span>
+              <h2 class="gate-title">Εταιρεία</h2>
+              <p class="gate-hint">
+                Διάλεξε εταιρεία για Check-in / Check-out. Όλα τα χτυπήματα γίνονται μόνο
+                για την επιλεγμένη εταιρεία.
+              </p>
+            </div>
+            <label class="gate-field" for="kiosk-setup-company">
+              <span class="gate-label">Επιλογή εταιρείας</span>
+              <select id="kiosk-setup-company" class="gate-input gate-select">
+                <option value="">— Επιλογή εταιρείας —</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              id="kiosk-setup-connect"
+              class="btn btn-primary gate-btn gate-btn--primary"
+              disabled
+            >
+              Συνέχεια στο Scanner
+            </button>
+          </div>
+
+          <p id="kiosk-setup-status" class="gate-status hidden" role="alert"></p>
+        </div>
       </div>
     </div>
 
@@ -913,11 +965,12 @@
     <script id="kiosk-bootstrap-data" type="application/json">__KIOSK_BOOTSTRAP__</script>
     <script>
       window.KIOSK_KEY = "__KIOSK_KEY__";
+      window.KIOSK_WEB_GATE = __KIOSK_WEB_GATE__;
       try {
         const bootRaw = document.getElementById("kiosk-bootstrap-data")?.textContent || "{}";
         window.KIOSK_BOOTSTRAP = JSON.parse(bootRaw);
       } catch {
-        window.KIOSK_BOOTSTRAP = { companies: [], kiosk_ready: false };
+        window.KIOSK_BOOTSTRAP = { companies: [], kiosk_ready: false, web_gate: window.KIOSK_WEB_GATE };
       }
     </script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
